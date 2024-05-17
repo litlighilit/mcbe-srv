@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Add pack in one line:
+add .mcpack to the server's behavior_packs dir and update the world's json
+"""
+
+from sys import argv
+from argparse import ArgumentParser
+import os
+from shutil import unpack_archive
+def unzip(src, dst):
+    unpack_archive(src, dst, "zip")
+import json
+import os.path as path
+from pathlib import Path
+parser = ArgumentParser(description=__doc__)
+parser.add_argument('pack_path', type=Path, help="the full path of .mcpack")
+parser.add_argument('-w', '--world', help="the name of the world(level), if not given, get from ./getLevelName")
+parser.add_argument('-d', '--dry-run', action='store_true')
+args = parser.parse_args()
+
+if args.dry_run:
+    def unzip(src, dst):
+        print(src, '->', dst)
+        exit('skip the following task')
+
+world = args.world
+if world is None:
+   appDir = Path(argv[0]).absolute().parent
+   getter = appDir/"getLevelName"
+   world = os.popen(str(getter)).read().strip()
+
+
+pack = args.pack_path
+packName=pack.stem
+
+
+srvDir=Path(os.getenv("MC_HOME"))/"bedrock-server"
+
+packDir = srvDir/"behavior_packs"/packName
+
+
+unzip(pack, packDir)
+
+manifest_fn="manifest.json"
+manifest=packDir/manifest_fn
+
+# d: dict
+with open(manifest) as f:
+    d = json.load(f)
+header = d['header']
+need_keys = {'uuid', 'version', 'name'}
+oheader={k: v for k, v in header.items() if k in need_keys}
+oheader['pack_id'] = oheader.pop('uuid')
+
+KEY = 'name'  # shall be unique
+
+ojson_fn="world_behavior_packs.json"
+ojson = srvDir/"worlds"/world/ojson_fn
+if not ojson.is_file():
+    raise FileNotFoundError(f"{ojson}: please check or create it with a empty `[]`")
+
+def chk_append(fname, ls, x):
+    for i, v in enumerate(ls):
+        if v[KEY] == x[KEY]:
+            while True:
+                inp = input(f"There has been a {x} in {fname}\nContinue? (type yes/no): ")
+                ans = inp.lower()
+                if ans[0] == "y": goon = True
+                elif ans == "no": goon = False
+                else:
+                    print("bad input, yes/no expected, but got:", ans)
+                    continue
+                break
+            if not goon:
+                exit("exit")
+            ls[i] = x
+            break
+    else:
+        ls.append(x)
+
+with open(ojson, 'r+') as f:
+
+    ls = json.load(f)
+    chk_append(ojson, ls, oheader)
+    f.seek(0)
+    f.truncate()
+    json.dump(ls, f, ensure_ascii=False, indent=4)
+ 

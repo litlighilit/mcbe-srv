@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# start the MC server and
+# auto shut off after there is no player in the world.
+
+shut_debug=0
+
+[ $# -gt 0 ] && [ "$1" == "-d" ] && \
+  shut_debug=1  # if given -d
+
+
+mc_wd="${MC_HOME=~}"
+srv_bin="$mc_wd/app/bedrock_srv"
+backup(){ "$mc_wd/app/push_backup" "$@"; }
+
+logfile="$mc_wd/screen-mc-log.txt"
+
+mypass=mc
+
+
+err(){
+	echo $1 >&2
+	exit -1
+}
+
+
+INTER_S=300
+shut_arg=""
+
+S_BEFORE_FLUSH=10
+if [ $shut_debug == 1 ];then
+	INTER_S=6
+	shut_arg="-k"
+	S_BEFORE_FLUSH=0
+fi
+
+
+rooted(){
+	[ $UID -eq 0 ]
+}
+
+if rooted; then
+	rootdo(){ $@; }
+else
+	echo "$mypass" | sudo -p "" -S printf "" > /dev/null || err "wrong passwd"
+	rootdo(){
+		echo "$mypass"|sudo -p "" -S "$@"
+	}
+fi
+
+shut(){
+	rootdo shutdown $shut_arg
+}
+
+
+srv_name=mcbe-srv
+
+printf "" > "$logfile"
+if screen -ls "$srv_name" > /dev/null;then
+	echo "screen session named $srv_name alreadly created"
+	screen -r $srv_name -X logfile "$logfile" || err "failed to set logfile for previously created server"
+
+else
+	screen -L -Logfile "$logfile" -dm -S $srv_name "$srv_bin"
+fi
+
+
+screen -r $srv_name -X logfile flush $S_BEFORE_FLUSH
+
+
+srv_do(){
+	screen -p 0 -r $srv_name -X stuff "$* `printf '\r'`"
+}
+
+
+watchloop(){
+	local inWaitExitPeriod=0
+	local outp
+	while true;do
+		sleep $INTER_S
+		srv_do list
+		sleep $S_BEFORE_FLUSH
+		sleep 2 # a must to let log flush into file, have to wait a moment
+		outp=$(tail -2 "$logfile")
+		if [[ "$outp" == *"There are 0/"* ]];then
+			if [ $inWaitExitPeriod == 1 ];then
+				#srv_do save-all # no cmd save-all
+				srv_do stop
+				all2end
+				break
+			else
+				inWaitExitPeriod=1
+			fi
+		else
+			inWaitExitPeriod=0
+		fi
+	done
+
+}
+
+pidfile="$mc_wd/.auto-off_mc.pid"
+pid_clean(){
+	rm "$pidfile"
+}
+
+all2end(){
+	pid_clean
+	backup
+	shut
+}
+
+main(){
+	local opid=$(cat "$pidfile" 2> /dev/null)
+	if [ -z "$opid" ];then
+		echo "pid is $$"
+		echo "save pid to $pidfile"
+		printf $$ > "$pidfile"
+		watchloop &
+	
+	else
+		err "already start: pid: $opid"
+	fi
+
+}
+main
+
+

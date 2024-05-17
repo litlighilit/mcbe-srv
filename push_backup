@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+: ${MC_BACKUP_D:="$MC_HOME/worlds_backup"}
+
+add_backup(){
+	"$MC_HOME/app/new_one_backup" "$@"
+}
+
+deleteIfExcc(){
+	"$MC_HOME/app/keep_last_n" "$@"
+
+}
+
+
+
+deleteIfExcc -n 10 "$MC_BACKUP_D"
+
+add_backup
+

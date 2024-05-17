@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+[[ "$1" == "-h" ]] && \
+  echo "$0: a wrapper around bedrock_server" && \
+  exit
+
+set -u
+BEDROCK="$MC_HOME/bedrock-server"
+bedrock(){
+	cd $BEDROCK
+	LD_LIBRARY_PATH=. ./bedrock_server $@
+	cd -
+}                                                             
+bedrock

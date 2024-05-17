@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+: ${MC_BACKUP_D:="$MC_HOME/worlds_backup"}
+
+set -u
+set -e  # -o errexit
+
+default_mc_level=`"$MC_HOME/app/getLevelName"`
+: ${MC_LEVEL:="$default_mc_level"}
+
+mk(){
+	dest="$MC_BACKUP_D/$1.tar"
+	src="$MC_HOME"/bedrock-server/worlds/"$MC_LEVEL"
+	echo "backup" $src '->' $dest
+	dest=$(realpath "$dest")
+	cd "$src"
+	tar czf "$dest" "."
+	cd -
+}
+
+destFilename=$(date +'%0Y-%m-%d_%H-%M')
+
+mk $destFilename
+

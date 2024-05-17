@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+set -u
+
+# declare if not declared
+declOr(){
+	[ -v $1 ] || declare -g $1="$2"
+}
+
+declOr filteredLogDir "$HOME/mc-srv_logs"
+
+declOr shut_debug 0
+
+mc_wd="${MC_HOME=$HOME}"
+declOr srv_bin "$mc_wd/app/bedrock_srv"
+backup(){ "$mc_wd/app/push_backup" "$@"; }
+filterLog(){ "$mc_wd/app/filterLog" "$@"; }
+
+err(){
+	echo $1 >&2
+	exit 1
+}
+
+# weekday to restart and backup
+# 135 means Mon. Wed. and Fri.
+declOr WEEKDAY 135
+
+shallBackupAtWeekday(){
+	local weekday="$1"
+	for (( i=0; i<${#WEEKDAY}; i++ )); do
+	    if [[ "$weekday" == "${WEEKDAY:$i:1}"]]; then
+		return true
+	    fi
+	done
+	return false
+}
+
+# at what time to backup
+declOr HOUR 22
+declOr MINUTES 45
+
+
+declOr INTER_S 300
+declOr MAX_WAIT_TIMES 3
+
+if [ $shut_debug == 1 ];then
+	INTER_S=6
+	S_BEFORE_FLUSH=0
+fi
+
+# screen name
+srv_name=mcbe-srv
+
+
+declOr TMPDIR /tmp
+npipe="$TMPDIR/mcbe-log.fifo"
+pidfile="$HOME/.log_srv.pid"
+
+get_pid(){
+	cat "$pidfile" 2> /dev/null
+}
+
+
+srv_do(){
+	screen -p 0 -r $srv_name -X stuff "$* `printf '\r'`"
+}
+
+release_rc(){
+	srv_do stop
+	sleep 1
+	rm "$npipe"
+	rm "$pidfile"
+	exit
+}
+
+trap release_rc SIGINT 
+
+
+init(){
+	[ -e "$npipe" ] || mkfifo "$npipe"   || err "$npipe has exists alreadly or can't be created"
+	[ -d "$filteredLogDir" ] || mkdir "$filteredLogDir"
+	if screen -ls "$srv_name" > /dev/null;then
+		echo "screen session named $srv_name alreadly created"
+		screen -r $srv_name -X logfile "$npipe" || err "failed to set logfile for previously created server"
+	else
+		screen -L -Logfile "$npipe" -dm -S $srv_name "$srv_bin"
+	fi
+
+	screen -r $srv_name -X logfile flush $S_BEFORE_FLUSH
+}
+
+
+S_BEFORE_FLUSH=3 # at least 2
+waitToQuit(){
+	local outp i
+	local -i EXIT_DURATION=$INTER_S+$S_BEFORE_FLUSH
+
+	for((i=MAX_WAIT_TIMES; i>0; i--));do
+		sleep $INTER_S
+		srv_do list
+		sleep $S_BEFORE_FLUSH # a must to let log flush into file, have to wait a moment
+		outp=$(tail -2 $npipe)
+		if [[ "$outp" == *"There are 0/"* ]];then
+			srv_do stop
+			break
+		else
+			srv_do say "the server needs to restart for backup, \
+ please quit for at least $EXIT_DURATION seconds"
+			srv_do say "Above is the last $i warn, and the next will come after $INTER_S seconds"
+		fi
+	done
+	[[ $i == 0 ]] && srv_do stop
+
+	sleep 1 # wait server to stop
+}
+
+# start, backup, restart ... weekly
+weekly_do_loop(){
+	local weekday hour minute
+	init
+	filterLog "$npipe" --dest-dir="$filteredLogDir" > ~/filterLog.log &
+
+	while true;do
+		sleep 600 # 10 min
+		weekday=$(date +%u)
+		if ! shallBackupAtWeekday $weekday; then continue; fi
+		hour=$(date +%H)
+		[[ $hour < $HOUR ]] && continue
+		minute=$(date +%M)
+		[[ $minute < $MINUTES ]] && continue
+
+		# time to prepare backuping
+		waitToQuit
+
+		backup
+		init
+	done
+}
+
+
+checked_do_loop(){
+	local opid=$(get_pid)
+	if [ -z "$opid" ];then
+		echo "pid is $$"
+		echo "save pid to $pidfile"
+		printf $$ > "$pidfile"
+	weekly_do_loop
+	else
+		err "already start: pid: $opid (got from $pidfile)"
+	fi
+}
+main(){ 
+	if [ "$1" == "-c" ] || [ "$1" == "--stop" ]; then
+		local pid=$(get_pid)
+		kill -SIGINT $pid
+		return
+	fi
+	checked_do_loop
+}
+main "$@"
+
+

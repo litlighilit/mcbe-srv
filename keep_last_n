@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+DOC="delete the oldest ones if there are more than given number of items in the given directory."
+
+set -u  # make bash report error for undefined instead of silently returning a "" (null string)
+
+maxLen=10
+
+# allow -n to give another maxLen value
+while getopts "hn:" opt;do
+	case "$opt" in
+		n) maxLen="$OPTARG" ;;
+		h) echo $0: $DOC; exit;;
+	esac
+done
+shift $((OPTIND-1))
+
+
+err(){
+	echo "[ERR] $1" >&2;
+	exit -1
+}
+info(){ echo "[INFO] $1"; }
+
+if [[ $# < 1 ]];then
+	err "require a directory as arg"
+fi
+
+dest="$1"
+dest=${dest%/} # rm tailing '/'
+
+
+
+ls=( $(ls -c -r "$dest") )  # sort by ctime, oldest first
+
+len=${#ls[@]}
+
+let more=len-maxLen
+
+[[ $more < 0 ]] && exit 0  # nothing to do
+
+
+for((i=0; i<more; i++));do
+	fp="$dest/${ls[i]}"
+	info "remove old: $fp"
+	rm "$fp"
+done
+
+
