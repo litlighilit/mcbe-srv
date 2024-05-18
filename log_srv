@@ -28,7 +28,7 @@ declOr WEEKDAY 135
 shallBackupAtWeekday(){
 	local weekday="$1"
 	for (( i=0; i<${#WEEKDAY}; i++ )); do
-	    if [[ "$weekday" == "${WEEKDAY:$i:1}"]]; then
+	    if [[ "$weekday" == "${WEEKDAY:$i:1}" ]]; then
 		return true
 	    fi
 	done
@@ -150,10 +150,12 @@ checked_do_loop(){
 	fi
 }
 main(){ 
-	if [ "$1" == "-c" ] || [ "$1" == "--stop" ]; then
-		local pid=$(get_pid)
-		kill -SIGINT $pid
-		return
+	if  [ "$#" -gt 0  ]; then
+		if [ "$1" == "-c" ] || [ "$1" == "--stop" ]; then
+			local pid=$(get_pid)
+			kill -SIGINT $pid
+			return
+		fi
 	fi
 	checked_do_loop
 }
