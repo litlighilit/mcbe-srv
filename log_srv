@@ -29,10 +29,10 @@ shallBackupAtWeekday(){
 	local weekday="$1"
 	for (( i=0; i<${#WEEKDAY}; i++ )); do
 	    if [[ "$weekday" == "${WEEKDAY:$i:1}" ]]; then
-		return true
+		return 0  # 0 means true
 	    fi
 	done
-	return false
+	return 1  # 1 means false
 }
 
 # at what time to backup
