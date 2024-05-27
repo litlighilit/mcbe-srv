@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 [[ "$1" == "-h" ]] && \
-  echo "$0: a wrapper around bedrock_server" && \
+  echo -e "$0: a wrapper around bedrock_server\nif BEDROCK_SRV_DIR env is set, use it to start server" && \
   exit
 
 set -u
-BEDROCK="$MC_HOME/bedrock-server"
+: "${BEDROCK_SRV_DIR=$MC_HOME/bedrock-server}"
+
 bedrock(){
-	cd $BEDROCK
+	cd "$BEDROCK_SRV_DIR"
 	LD_LIBRARY_PATH=. ./bedrock_server $@
 	cd -
 }                                                             
