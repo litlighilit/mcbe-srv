@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -u
+set -e
 
 # declare if not declared
 declOr(){
@@ -83,14 +84,19 @@ init(){
 		echo "screen session named $srv_name alreadly created"
 		screen -r $srv_name -X logfile "$npipe" || err "failed to set logfile for previously created server"
 	else
-		screen -L -Logfile "$npipe" -dm -S $srv_name "$srv_bin"
+		screen -L -Logfile "$npipe" -dm -S "$srv_name" "$srv_bin"
+
 	fi
 
+}
+
+S_BEFORE_FLUSH=3 # at least 2
+
+flush_screen_log(){
 	screen -r $srv_name -X logfile flush $S_BEFORE_FLUSH
 }
 
 
-S_BEFORE_FLUSH=3 # at least 2
 waitToQuit(){
 	local outp i
 	local -i EXIT_DURATION=$INTER_S+$S_BEFORE_FLUSH
@@ -121,6 +127,7 @@ weekly_do_loop(){
 	filterLog "$npipe" --dest-dir="$filteredLogDir" > ~/filterLog.log &
 
 	while true;do
+		flush_screen_log
 		sleep 600 # 10 min
 		weekday=$(date +%u)
 		if ! shallBackupAtWeekday $weekday; then continue; fi
@@ -144,7 +151,7 @@ checked_do_loop(){
 		echo "pid is $$"
 		echo "save pid to $pidfile"
 		printf $$ > "$pidfile"
-	weekly_do_loop
+		weekly_do_loop
 	else
 		err "already start: pid: $opid (got from $pidfile)"
 	fi
