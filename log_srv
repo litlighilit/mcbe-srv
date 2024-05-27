@@ -123,6 +123,7 @@ waitToQuit(){
 # start, backup, restart ... weekly
 weekly_do_loop(){
 	local weekday hour minute
+	local hasBackup=0
 	init
 	filterLog "$npipe" --dest-dir="$filteredLogDir" > ~/filterLog.log &
 
@@ -130,17 +131,25 @@ weekly_do_loop(){
 		flush_screen_log
 		sleep 600 # 10 min
 		weekday=$(date +%u)
-		if ! shallBackupAtWeekday $weekday; then continue; fi
-		hour=$(date +%H)
-		[[ $hour < $HOUR ]] && continue
-		minute=$(date +%M)
-		[[ $minute < $MINUTES ]] && continue
+		if shallBackupAtWeekday $weekday; then 
 
-		# time to prepare backuping
-		waitToQuit
+			[[ "$hasBackup" == "1" ]] && continue
 
-		backup
-		init
+				
+			hour=$(date +%H)
+			[[ $hour < $HOUR ]] && hasBackup=0 && continue
+			minute=$(date +%M)
+			[[ $minute < $MINUTES ]] && hasBackup=0 && continue
+
+			# time to prepare backuping
+			waitToQuit
+
+			backup
+			hasBackup=1
+			init
+		else
+			hasBackup=0
+		fi
 	done
 }
 
