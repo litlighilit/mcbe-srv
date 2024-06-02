@@ -124,6 +124,11 @@ waitToQuit(){
 weekly_do_loop(){
 	local weekday hour minute
 	local hasBackup=0
+	if [ -v "MCBE_SRV_TODAY_NO_BACKUP" ];then
+		echo "MCBE_SRV_TODAY_NO_BACKUP is given as $MCBE_SRV_TODAY_NO_BACKUP"
+		# TODO: add checks to force as valid values/add mappers
+		hasBackup="$MCBE_SRV_TODAY_NO_BACKUP"
+	fi
 	init
 	filterLog "$npipe" --dest-dir="$filteredLogDir" > ~/filterLog.log &
 
