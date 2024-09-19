@@ -6,6 +6,8 @@
 set -u
 : "${BEDROCK_SRV_DIR=$MC_HOME/bedrock-server}"
 
+[ -d "$BEDROCK_SRV_DIR" ] || echo "bedrock_srv dir is not a directory(or not exist), please install official server and place it corretly" && exit 1
+
 bedrock(){
 	cd "$BEDROCK_SRV_DIR"
 	LD_LIBRARY_PATH=. ./bedrock_server $@
