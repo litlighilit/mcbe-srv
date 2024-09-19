@@ -16,6 +16,22 @@ The simplest way to make it is:
 git clone https://github.com/litlighilit/mcbe-srv ~/app
 ```
 
+### Download mc be server
+
+Then go to <https://www.minecraft.net/en-us/download/server/bedrock>,
+
+scroll to section of "Minecraft Dedicated Server software for Ubuntu (Linux)",
+
+tick "I agree to the Minecraft End User License Agreement and Privacy Policy" (after reading and agreeing policy),
+
+finally click "DOWNLOAD"
+
+(or copy its url and directly install it in your linux via curl, wget, etc)
+
+### Install mc be server
+unzip it, placing content in ~/bedrock-server/
+
+
 ## Tools
 
 > Almost every tool accepts `-h` for help, try it if wanting details.
