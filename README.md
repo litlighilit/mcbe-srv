@@ -31,6 +31,13 @@ finally click "DOWNLOAD"
 ### Install mc be server
 unzip it, placing content in ~/bedrock-server/
 
+Take 1.21.30.03 as example:
+
+```shell
+curl -o bedrock-server.zip https://minecraft.azureedge.net/bin-linux/bedrock-server-1.21.30.03.zip
+unzip -d ~/bedrock-server bedrock-server.zip
+rm bedrock-server.zip
+```
 
 ## Tools
 
