@@ -24,4 +24,4 @@
 - pascalCase for executable (whose source code is in ./src) [^exe]
 
 
-[^exe]: the executable in this repo is of x86_x64 Ubuntu. If you are using other architectures/OSes, it's quite easy to compile. All you need is just a [Nim compiler](https://nim-lang.org/install.html), which is as small as dozens of Mb.
+[^exe]: the executable in this repo is of x86_x64 Ubuntu. If you are using other architectures/OSes, it's quite easy to compile. All you need is just a [Nim compiler](https://nim-lang.org/install.html), which is as small as dozens of Mb, and run `./build_sh.bash`
