@@ -5,7 +5,7 @@
 > Almost every tool accepts `-h` for help, try it if wanting details.
 
 ### Change default Configure of mc BE server
-- the `init_srv` is a python module containing a `__main__.py` that's used to change some cfg of mcbe srv like making default player `Visitor` level.
+- the `init_srv` is a python module containing a `__main__.py` which makes up a server from existing world(called "level" by MC), and is used to change some cfg of mcbe srv like making default player `Visitor` level.
 
 ### World backup
 - new_one_backup: creates a new backup of the world currently runned by server
