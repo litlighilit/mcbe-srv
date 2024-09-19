@@ -1,5 +1,21 @@
 # Minecraft BE server tool chain
 
+## init
+
+First of all, these tools are aimed to run in a seperated user.
+
+To init,
+clone this repo,
+if using default cfg,
+please place this repo's dir to $HOME and rename as `app`.
+
+The simplest way to make it is:
+
+```shell
+# assuming this is executed by a newly created user.
+git clone https://github.com/litlighilit/mcbe-srv ~/app
+```
+
 ## Tools
 
 > Almost every tool accepts `-h` for help, try it if wanting details.
